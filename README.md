@@ -2,10 +2,14 @@
 **work on** is a command line tool that manages your current activities and interruptions.
 
 # overview
-work on is a tool, that is initially written in java (because that's the language I know best) and will be reimplemented in rust asap.
-The tool stores the activities in a file in `~/.workon/activities` and provides as cli the ability to manipulate and show the content.
+A developer normally works on one ongoing task (e.g. a story or a bug etc.) we call this **ongoing activity**. During the workday there are normally multiple interruptions. maybe another developer has a question. A PO
+has a question, or an urgent call. if enough of this interruptions pile on each other the developer loses track of what he actually was doing. this tool is helping with organizing the ongoing activities, displaying the stack of interruptions and show what has been done at the end of the day. 
 
+It organizes activities in two group: ongoing and finished activities. ongoing activities have an ID with which they can be referenced easily. it can be a number or a word. and it can be reused for different activities.
+finished activities have only a description and a duration and are just kept for information (and removed at some point). 
 
+the user can create ongoing activities on the fly and switch between them. Finishing an activity removes them from ongoing activities. reusing an ID finishes the previous activity. 
+ 
 # usage
 ## start [ID [Description]]
 **without parameter** , the last unfinished activity is continued
