@@ -2,13 +2,19 @@
 **work on** is a command line tool that manages your current activities and interruptions.
 
 # overview
-A developer normally works on one ongoing task (e.g. a story or a bug etc.) we call this **ongoing activity**. During the workday there are normally multiple interruptions. maybe another developer has a question. A PO
-has a question, or an urgent call. if enough of this interruptions pile on each other the developer loses track of what he actually was doing. this tool is helping with organizing the ongoing activities, displaying the stack of interruptions and show what has been done at the end of the day. 
+A developer normally should work on **one** task (e.g. a story, a bug or a feature).
+During the workday there are occure interruptions, though. (e.g. another developer has a question. A PO needs some documentation, or a customer call).
+If enough of this interruptions pile on each other the developer loses track of what he was actually doing. 
+**work on** is helping with organizing the ongoing activities, displaying the stack of interruptions and show what has been done at the end of the day. 
 
-It organizes activities in two group: ongoing and finished activities. ongoing activities have an ID with which they can be referenced easily. it can be a number or a word. and it can be reused for different activities.
-finished activities have only a description and a duration and are just kept for information (and removed at some point). 
+It organizes activities in two group: **ongoing** and **finished** activities. 
+Ongoing activities have an ID with which they can be referenced easily.
+This ID can be a number or a word and it can be reused for different activities.
+Finished activities have only a description and a duration and are just kept for information (and will fade at some point). 
 
-the user can create ongoing activities on the fly and switch between them. Finishing an activity removes them from ongoing activities. reusing an ID finishes the previous activity. 
+The user can create ongoing activities on the fly and switch between them.
+Finishing an activity removes them from ongoing activities.
+Reusing an ID finishes the activity that had the same ID before. 
  
 # usage
 ## start [ID [Description]]
