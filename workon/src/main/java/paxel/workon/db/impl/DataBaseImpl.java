@@ -205,4 +205,9 @@ public class DataBaseImpl implements DataBase {
         return "DataBaseImpl{" + "stack=" + stack + ", lookup=" + lookup + ", finished=" + finished + ", current=" + current + ", start=" + start + '}';
     }
 
+    @Override
+    public void clearFinishedActivities() {
+        finished.clear();
+    }
+
 }

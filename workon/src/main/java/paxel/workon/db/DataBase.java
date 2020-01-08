@@ -67,4 +67,6 @@ public interface DataBase {
      */
     boolean stop();
 
+    public void clearFinishedActivities();
+
 }
