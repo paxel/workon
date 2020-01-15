@@ -69,4 +69,9 @@ public interface DataBase {
 
     public void clearFinishedActivities();
 
+    public void clearAll();
+
+    public void idle();
+
+    public long getCurrentDuration();
 }

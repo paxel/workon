@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import paxel.workon.db.DataBase;
 import paxel.workon.db.impl.Activity;
@@ -15,9 +16,9 @@ import paxel.workon.db.impl.DataBaseStreamSerializer;
 import paxel.workon.io.PidLock;
 
 public class WorkOn {
-    
+
     public static void main(String... argv) {
-        
+
         try {
             PidLock lock = new PidLock(WORKON);
             try {
@@ -26,7 +27,7 @@ public class WorkOn {
                     return;
                 }
                 new WorkOn().handle(Arrays.asList(argv));
-                
+
             } finally {
                 lock.close();
             }
@@ -38,7 +39,7 @@ public class WorkOn {
     private final Path dbFile;
     private final DataBase db;
     private final DataBaseStreamSerializer baseStreamSerializer;
-    
+
     public WorkOn() throws IOException {
         // complete bull crap code! :D
         Path workonDir = Paths.get(System.getProperty("user.home"), WORKON);
@@ -63,75 +64,81 @@ public class WorkOn {
             db = new DataBaseImpl();
         }
     }
-    
+
     private List<String> removeCommand(List<String> args) {
         if (args.size() == 1) {
             return Collections.emptyList();
         }
         return args.subList(1, args.size());
     }
-    
+
     private void handle(List<String> argv) {
-        if (argv.isEmpty() || argv.get(0).equalsIgnoreCase("status")) {
+        if (argv.isEmpty() || argv.get(0).equalsIgnoreCase("status") || argv.get(0).equals("#")) {
             printStatus();
-        } else if (argv.get(0).equalsIgnoreCase("start")) {
-            start(removeCommand(argv));
-        } else if (argv.get(0).equalsIgnoreCase("stop")) {
-            stop();
-        } else if (argv.get(0).equalsIgnoreCase("switch")) {
-            switchTo(removeCommand(argv));
-        } else if (argv.get(0).equalsIgnoreCase("purge")) {
-            purge();
         } else {
-            printStatus();
+            final String command = argv.get(0);
+            if (command.equalsIgnoreCase("start") || command.equals("+")) {
+                start(removeCommand(argv));
+            } else if (command.equalsIgnoreCase("stop") || command.equals("-")) {
+                idle(removeCommand(argv));
+            } else if (command.equalsIgnoreCase("finish") || command.equals("!")) {
+                stop();
+            } else if (command.equalsIgnoreCase("switch") || command.equals(".")) {
+                switchTo(removeCommand(argv));
+            } else if (command.equalsIgnoreCase("clear")) {
+                purge();
+            } else if (command.equalsIgnoreCase("reset")) {
+                reset();
+            } else if (command.equalsIgnoreCase("help") || command.equals("?")) {
+                syntax();
+            } else {
+                printStatus();
+            }
         }
     }
-    
+
     private void printStatus() {
         Activity current = db.getCurrent();
-        if (db.getActivityStack().isEmpty()) {
-            System.out.println("You have no pending activities.");
-        } else {
+        if (!db.getActivityStack().isEmpty()) {
             System.out.println("Your stack:");
             for (Activity activity : db.getActivityStack()) {
-                System.out.println("- " + activity.getId() + " - " + activity.getDescription());
+                System.out.println(" * " + activity.getId() + " : '" + activity.getDescription() + "' (" + formatTime(activity.getDurationInMillis()) + ")");
             }
         }
-        
-        if (db.getFinishedActivities().isEmpty()) {
-        } else {
+
+        if (!db.getFinishedActivities().isEmpty()) {
             System.out.println("You have finished:");
             for (Activity activity : db.getFinishedActivities()) {
-                System.out.println("- " + activity.getDescription());
+                System.out.println(" - '" + activity.getDescription() + "' (" + formatTime(activity.getDurationInMillis()) + ")");
             }
         }
-        
+
         if (current == null) {
             System.out.println("\nYou are idle.\n");
         } else {
-            System.out.println("\nYou are working on '" + current.getDescription() + "'\n");
+            System.out.println("\nYou are working on '" + current.getDescription() + "' (for " + formatTime(db.getCurrent().getDurationInMillis() + db.getCurrentDuration()) + ")");
         }
-        
+
     }
-    
+
     private void start(List<String> param) {
         if (param.isEmpty()) {
             switchToPrevious();
         }
-        
+
         if (param.size() == 1) {
             switchToId(param);
         }
         if (param.size() > 1) {
             String id = param.get(0);
-            
+
             String description = param.subList(1, param.size()).stream().collect(Collectors.joining(" "));
             db.start(id, description);
             printStatus();
             saveDb();
         }
     }
-    
+
     private void switchToId(List<String> param) {
         String id = param.get(0);
         boolean start = db.start(id);
@@ -143,13 +150,13 @@ public class WorkOn {
             printStatus();
         }
     }
-    
+
     private void stop() {
         db.stop();
         printStatus();
         saveDb();
     }
-    
+
     private void switchTo(List<String> param) {
         if (param.size() >= 1) {
             switchToId(param);
@@ -157,7 +164,7 @@ public class WorkOn {
             switchToPrevious();
         }
     }
-    
+
     private void switchToPrevious() {
         boolean startPrevious = db.startPrevious();
         if (startPrevious) {
@@ -169,14 +176,14 @@ public class WorkOn {
             printStatus();
         }
     }
-    
+
     private void purge() {
         db.clearFinishedActivities();
         System.out.println("Purged finished activities");
         printStatus();
         saveDb();
     }
-    
+
     private void saveDb() {
         try {
             this.baseStreamSerializer.write(db);
@@ -184,5 +191,53 @@ public class WorkOn {
             System.err.println("Could not write DB file " + dbFile + ": " + ex.getMessage());
         }
     }
-    
+
+    private void idle(List<String> removeCommand) {
+        db.idle();
+        printStatus();
+        saveDb();
+    }
+
+    private void reset() {
+        db.clearFinishedActivities();
+        System.out.println("DB reseted.");
+        printStatus();
+        saveDb();
+    }
+
+    private String formatTime(long durationInMillis) {
+        StringBuilder b = new StringBuilder();
+        long hours = TimeUnit.MILLISECONDS.toHours(durationInMillis);
+
+        if (hours > 0) {
+            b.append(hours).append("h ");
+            durationInMillis -= TimeUnit.HOURS.toMillis(hours);
+        }
+
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(durationInMillis);
+
+        if (minutes > 0) {
+            b.append(minutes).append("m ");
+            durationInMillis -= TimeUnit.MINUTES.toMillis(minutes);
+        }
+
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(durationInMillis);
+
+        b.append(seconds).append("s ");
+        return b.toString();
+    }
+
+    private void syntax() {
+        System.out.println("wo <command> ");
+        System.out.println(" where commands are");
+        System.out.println("  help/?: shows this command ");
+        System.out.println("  status/# or no command: prints the db.");
+        System.out.println("  start/+ [id [description]]: starts previous activity, the activity with given ID or a new or previous activity with given ID and description.");
+        System.out.println("  stop/-: pushs current activity to the stack.");
+        System.out.println("  switch/. [id]: starts previous activity or the previous activity with given ID.");
+        System.out.println("  finish/!: stops current activity.");
+        System.out.println("  purge: removes all finished activities.");
+        System.out.println("  reset: clears the data base");
+    }
+
 }

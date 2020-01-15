@@ -25,6 +25,7 @@ public class DataBaseImpl implements DataBase {
      *
      * @return {@code true} if the ID existed.
      */
+    @Override
     public boolean start(String id) {
         pushCurrentOnStack();
         Activity previous = lookup.get(id);
@@ -43,6 +44,7 @@ public class DataBaseImpl implements DataBase {
      *
      * @return {@code true} if the ID existed.
      */
+    @Override
     public boolean startPrevious() {
         // first remove previous from stack before the current is pushed to stack
         Activity previous = stack.pollFirst();
@@ -54,6 +56,7 @@ public class DataBaseImpl implements DataBase {
         return true;
     }
 
+    @Override
     public void start(String id, String description) {
         pushCurrentOnStack();
         Activity previous = lookup.get(id);
@@ -65,6 +68,7 @@ public class DataBaseImpl implements DataBase {
         }
     }
 
+    @Override
     public boolean stop() {
         if (current != null) {
             finishActivity(current);
@@ -75,14 +79,17 @@ public class DataBaseImpl implements DataBase {
         return false;
     }
 
+    @Override
     public Activity getCurrent() {
         return current;
     }
 
+    @Override
     public List<Activity> getActivityStack() {
         return stack;
     }
 
+    @Override
     public List<Activity> getFinishedActivities() {
         return finished;
     }
@@ -208,6 +215,28 @@ public class DataBaseImpl implements DataBase {
     @Override
     public void clearFinishedActivities() {
         finished.clear();
+    }
+
+    @Override
+    public void clearAll() {
+        current = null;
+        start = null;
+        this.finished.clear();
+        this.lookup.clear();
+        this.stack.clear();
+    }
+
+    @Override
+    public void idle() {
+        pushCurrentOnStack();
+    }
+
+    @Override
+    public long getCurrentDuration() {
+        if (start == null) {
+            return 0;
+        }
+        return System.currentTimeMillis() - start;
     }
 
 }
